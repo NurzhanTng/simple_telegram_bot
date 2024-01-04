@@ -4,6 +4,7 @@ import json
 
 from core.keybords.reply import reply_keyboard, loc_tel_poll_keyboard, get_reply_keyboard
 from core.keybords.inline import select_macbook, get_inline_keyboard
+from core.utils.dbconnect import Request
 
 
 async def get_inline(message: Message, bot: Bot):
@@ -13,11 +14,13 @@ async def get_inline(message: Message, bot: Bot):
   )
 
 
-async def get_start(message: Message, bot: Bot):
-  # await bot.send_message(message.from_user.id, f"<b>Привет {message.from_user.username}. Рад тебя видеть!</b>")
+async def get_start(message: Message, bot: Bot, counter: str, request: Request):
+  # await bot.send_message(message.from_user.id, f"<s>Привет {message.from_user.username}. Рад тебя видеть!</s>")
   # await message.reply(f"<tg-spoiler>Привет {message.from_user.username}. Рад тебя видеть!</tg-spoiler>")
+  await request.add_data(message.from_user.id, message.from_user.first_name)
+  await message.answer(f'Сообщение #{counter}')
   await message.answer(
-    f"<s>Привет {message.from_user.username}. Рад тебя видеть!</s>", 
+    f"<b>Привет {message.from_user.username}. Рад тебя видеть!</b>", 
     reply_markup=get_reply_keyboard()
   )
 
