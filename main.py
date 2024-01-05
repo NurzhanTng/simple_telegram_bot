@@ -1,6 +1,8 @@
 import asyncio 
 import logging 
 import psycopg_pool
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message
 from aiogram.filters import Command
@@ -10,15 +12,24 @@ from core.handlers.contact import get_fake_contact, get_true_contact
 from core.handlers.callback import select_macbook
 from core.handlers.pay import order, pre_checkout_query, successful_payment
 from core.handlers.form import get_form, get_name, get_last_name, get_age
+from core.handlers.appschedule import send_message_cron, send_message_interval, send_message_time
+
 from core.filters.iscontact import IsTrueContact
+
 from core.utils.commands import set_commands 
 from core.utils.callbackdata import MacInfo
 from core.utils.statesform import StepForm
+
 from core.middlewares.countermiddleware import CounterMiddleware
 from core.middlewares.officehours import OfficeHoursMiddleware
 from core.middlewares.dbmiddleware import DbSession
+from core.middlewares.appshedulermiddleware import SchedulerMiddleware
+
 from core.settings import settings 
+
 asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
 
 async def start_bot(bot: Bot):
   await set_commands(bot)
@@ -48,10 +59,17 @@ async def main():
   bot  = Bot(settings.bots.bot_token, parse_mode='HTML')
   pool_connect = create_pool()
   dp = Dispatcher()
+  scheduler = AsyncIOScheduler(timezone="Asia/Almaty")
+  start_time = datetime.now()
+  scheduler.add_job(send_message_time, trigger='date', run_date=start_time + timedelta(seconds=10), kwargs={ 'bot': bot })
+  scheduler.add_job(send_message_cron, trigger='cron', hour=start_time.hour, minute=start_time.minute + 1, kwargs={ 'bot': bot })
+  scheduler.add_job(send_message_interval, trigger='interval', seconds=60, kwargs={ 'bot': bot })
+  scheduler.start()
   
   dp.message.middleware.register(DbSession(pool_connect))
   dp.message.middleware.register(CounterMiddleware())
   dp.message.middleware.register(OfficeHoursMiddleware())
+  dp.message.middleware.register(SchedulerMiddleware(scheduler))
 
   dp.startup.register(start_bot)
   dp.shutdown.register(stop_bot)
@@ -78,3 +96,4 @@ async def main():
 
 if __name__ == "__main__":
   asyncio.run(main())
+  # print(datetime.datetime.now(datetime.timezone.utc).astimezone())
