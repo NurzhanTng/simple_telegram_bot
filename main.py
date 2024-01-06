@@ -7,13 +7,13 @@ from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message
 from aiogram.filters import Command
 
-from core.handlers.basic import get_start, get_photo, get_hello, get_location, get_inline
+from core.handlers.basic import get_start, get_photo as get_photo_from_user, get_hello, get_location, get_inline
 from core.handlers.contact import get_fake_contact, get_true_contact
 from core.handlers.callback import select_macbook
 from core.handlers.pay import order, pre_checkout_query, successful_payment
 from core.handlers.form import get_form, get_name, get_last_name, get_age
 from core.handlers.appschedule import send_message_cron, send_message_interval, send_message_time
-
+from core.handlers.send_media import get_sticker, get_audio, get_document, get_media_group, get_photo, get_video, get_video_note, get_voice
 from core.filters.iscontact import IsTrueContact
 
 from core.utils.commands import set_commands 
@@ -68,11 +68,21 @@ async def main():
   
   dp.message.middleware.register(DbSession(pool_connect))
   dp.message.middleware.register(CounterMiddleware())
-  dp.message.middleware.register(OfficeHoursMiddleware())
+  # dp.message.middleware.register(OfficeHoursMiddleware())
   dp.message.middleware.register(SchedulerMiddleware(scheduler))
 
   dp.startup.register(start_bot)
   dp.shutdown.register(stop_bot)
+
+  dp.message.register(get_audio, Command(commands='audio'))
+  dp.message.register(get_document, Command(commands='document'))
+  dp.message.register(get_media_group, Command(commands='mediagroup'))
+  dp.message.register(get_photo, Command(commands='photo'))
+  dp.message.register(get_sticker, Command(commands='sticker'))
+  dp.message.register(get_video, Command(commands='video'))
+  dp.message.register(get_video_note, Command(commands='video_note'))
+  dp.message.register(get_voice, Command(commands='voice'))
+
   dp.message.register(get_form, Command(commands='form'))
   dp.message.register(get_name, StepForm.GET_NAME)
   dp.message.register(get_last_name, StepForm.GET_LAST_NAME)
@@ -83,7 +93,7 @@ async def main():
   dp.message.register(order, Command(commands=['pay']))
   dp.pre_checkout_query.register(pre_checkout_query)
   dp.message.register(successful_payment, successful_payment_type)
-  dp.message.register(get_photo, F.photo)
+  dp.message.register(get_photo_from_user, F.photo)
   dp.message.register(get_hello, F.text == 'Привет')
   dp.message.register(get_location, location_type)
   dp.message.register(get_true_contact, contact_type, IsTrueContact())
