@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message
 from aiogram.filters import Command
+from aiogram.utils.chat_action import ChatActionMiddleware
 
 from core.handlers.basic import get_start, get_photo as get_photo_from_user, get_hello, get_location, get_inline
 from core.handlers.contact import get_fake_contact, get_true_contact
@@ -14,7 +15,6 @@ from core.handlers.pay import order, pre_checkout_query, successful_payment
 from core.handlers.form import get_form, get_name, get_last_name, get_age
 from core.handlers.appschedule import send_message_cron, send_message_interval, send_message_time
 from core.handlers.send_media import get_sticker, get_audio, get_document, get_media_group, get_photo, get_video, get_video_note, get_voice
-from core.filters.iscontact import IsTrueContact
 
 from core.utils.commands import set_commands 
 from core.utils.callbackdata import MacInfo
@@ -25,10 +25,9 @@ from core.middlewares.officehours import OfficeHoursMiddleware
 from core.middlewares.dbmiddleware import DbSession
 from core.middlewares.appshedulermiddleware import SchedulerMiddleware
 
+from core.filters.iscontact import IsTrueContact
 from core.settings import settings 
-
 asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
 
 
 async def start_bot(bot: Bot):
@@ -59,29 +58,31 @@ async def main():
   bot  = Bot(settings.bots.bot_token, parse_mode='HTML')
   pool_connect = create_pool()
   dp = Dispatcher()
-  scheduler = AsyncIOScheduler(timezone="Asia/Almaty")
-  start_time = datetime.now()
-  scheduler.add_job(send_message_time, trigger='date', run_date=start_time + timedelta(seconds=10), kwargs={ 'bot': bot })
-  scheduler.add_job(send_message_cron, trigger='cron', hour=start_time.hour, minute=start_time.minute + 1, kwargs={ 'bot': bot })
-  scheduler.add_job(send_message_interval, trigger='interval', seconds=60, kwargs={ 'bot': bot })
-  scheduler.start()
+
+  # scheduler = AsyncIOScheduler(timezone="Asia/Almaty")
+  # start_time = datetime.now()
+  # scheduler.add_job(send_message_time, trigger='date', run_date=start_time + timedelta(seconds=10), kwargs={ 'bot': bot })
+  # scheduler.add_job(send_message_cron, trigger='cron', hour=start_time.hour, minute=start_time.minute + 1, kwargs={ 'bot': bot })
+  # scheduler.add_job(send_message_interval, trigger='interval', seconds=60, kwargs={ 'bot': bot })
+  # scheduler.start()
   
   dp.message.middleware.register(DbSession(pool_connect))
   dp.message.middleware.register(CounterMiddleware())
+  dp.message.middleware.register(ChatActionMiddleware())
   # dp.message.middleware.register(OfficeHoursMiddleware())
-  dp.message.middleware.register(SchedulerMiddleware(scheduler))
+  # dp.message.middleware.register(SchedulerMiddleware(scheduler))
 
   dp.startup.register(start_bot)
   dp.shutdown.register(stop_bot)
 
-  dp.message.register(get_audio, Command(commands='audio'))
-  dp.message.register(get_document, Command(commands='document'))
-  dp.message.register(get_media_group, Command(commands='mediagroup'))
-  dp.message.register(get_photo, Command(commands='photo'))
-  dp.message.register(get_sticker, Command(commands='sticker'))
-  dp.message.register(get_video, Command(commands='video'))
-  dp.message.register(get_video_note, Command(commands='video_note'))
-  dp.message.register(get_voice, Command(commands='voice'))
+  dp.message.register(get_audio, Command(commands='audio'), flags={ 'chat_action': 'upload_document' })
+  dp.message.register(get_document, Command(commands='document'), flags={ 'chat_action': 'upload_document' })
+  dp.message.register(get_media_group, Command(commands='mediagroup'), flags={ 'chat_action': 'upload_photo' })
+  dp.message.register(get_photo, Command(commands='photo'), flags={ 'chat_action': 'upload_photo' })
+  dp.message.register(get_sticker, Command(commands='sticker'), flags={ 'chat_action': 'upload_stiker' })
+  dp.message.register(get_video, Command(commands='video'), flags={ 'chat_action': 'upload_video' })
+  dp.message.register(get_video_note, Command(commands='video_note'), flags={ 'chat_action': 'upload_video_note' })
+  dp.message.register(get_voice, Command(commands='voice'), flags={ 'chat_action': 'upload_voice' })
 
   dp.message.register(get_form, Command(commands='form'))
   dp.message.register(get_name, StepForm.GET_NAME)
@@ -106,4 +107,3 @@ async def main():
 
 if __name__ == "__main__":
   asyncio.run(main())
-  # print(datetime.datetime.now(datetime.timezone.utc).astimezone())
