@@ -1,5 +1,6 @@
-from aiogram import Bot
-from aiogram.types import Message 
+from aiogram import Bot, Router
+from aiogram.filters import Command
+from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
@@ -8,23 +9,29 @@ from core.handlers.appschedule import send_message_middleware
 from core.utils.statesform import StepForm
 
 
+router = Router()
+
+@router.message(Command(commands='form'))
 async def get_form(message: Message, state: FSMContext):
   await message.answer(f"{message.from_user.first_name}, начинаем заполнять анкету. Ведите свое имя")
   await state.set_state(StepForm.GET_NAME)
 
 
+@router.message(StepForm.GET_NAME)
 async def get_name(message: Message, state: FSMContext):
   await message.answer(f'Твое имя:\r\n{message.text}\r\nТеперь введи фамилию')
   await state.update_data(name=message.text)
   await state.set_state(StepForm.GET_LAST_NAME)
 
 
+@router.message(StepForm.GET_LAST_NAME)
 async def get_last_name(message: Message, state: FSMContext):
   await message.answer(f'Твоя фамилия:\r\n{message.text}\r\nТеперь введи возраст')
   await state.update_data(last_name=message.text)
   await state.set_state(StepForm.GET_AGE)
 
 
+@router.message(StepForm.GET_AGE)
 async def get_age(message: Message, bot: Bot, state: FSMContext, apscheduler: AsyncIOScheduler):
   await message.answer(f'Твой возраст:\r\n{message.text}\r\n')
   await state.update_data(age=message.text)

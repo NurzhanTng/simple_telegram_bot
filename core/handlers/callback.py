@@ -1,7 +1,10 @@
-from aiogram import Bot
+from aiogram import Bot, Router, F
+from aiogram.filters import Command
 from aiogram.types import CallbackQuery
 
 from core.utils.callbackdata import MacInfo
+
+router = Router()
 
 '''
 async def select_macbook(call: CallbackQuery, bot: Bot):
@@ -15,6 +18,7 @@ async def select_macbook(call: CallbackQuery, bot: Bot):
   await call.answer()
 '''
 
+@router.callback_query(MacInfo.filter(F.model == 'pro'))
 async def select_macbook(call: CallbackQuery, bot: Bot, callback_data: MacInfo):
   model = callback_data.model
   size = callback_data.size

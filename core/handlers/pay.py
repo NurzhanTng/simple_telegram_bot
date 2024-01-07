@@ -1,7 +1,11 @@
-from aiogram import Bot
+from aiogram import Bot, Router, F
+from aiogram.filters import Command
 from aiogram.types import Message, LabeledPrice, PreCheckoutQuery
 
 
+router = Router()
+
+@router.message(Command(commands=['pay']))
 async def order(message: Message, bot: Bot):
   await bot.send_invoice(
     chat_id=message.chat.id,
@@ -52,10 +56,12 @@ async def order(message: Message, bot: Bot):
   )
 
 
+@router.pre_checkout_query()
 async def pre_checkout_query(pre_checkout_query: PreCheckoutQuery, bot: Bot):
   await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
 
 
+@router.message(F.successful_payment)
 async def successful_payment(message: Message):
   msg = f"Спасибо за оплату {message.successful_payment.total_amount // 100} {message.successful_payment.currency}." \
     f'\r\nНаш менеджер получил заявку и уэе набирает Ваш номер телефона.' \
